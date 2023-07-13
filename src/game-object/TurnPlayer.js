@@ -1,12 +1,12 @@
 import Phaser from "phaser";
 
 export default class TurnPlayer extends Phaser.GameObjects.Sprite {
-  constructor(scene, frame, activeFrame, x, y, sessionId) {
+  constructor(scene, frame, activeFrame, x, y, id) {
     super(scene, x, y, "turn", frame);
 
     this.frame0 = frame
     this.activeFrame = activeFrame
-    this.sessionId = sessionId
+    this.id = id
 
 
     this.scene = scene

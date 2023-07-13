@@ -10,7 +10,6 @@ export default class Pause extends Phaser.Scene {
     super("pause");
   }
 
-
   create(data) {
     const { text } = data;
 
@@ -29,30 +28,32 @@ export default class Pause extends Phaser.Scene {
       color: "#ffffff",
     });
 
-    this.exit = new Button(this, 1300, 50, "but_no");
-    this.exit.setScale(0.5);
+    // this.exit = new Button(this, 1300, 50, "but_no");
+    // this.exit.setScale(0.5);
     this.help = new Button(this, 1300, 50, "but_help");
     this.fullscreen = new Button(this, 1300, 50, "but_fullscreen");
     this.fullscreen.setFrame(1);
     this.settings = new Button(this, 1300, 50, "but_settings");
 
+    // this.tweens.add({
+    //   targets: this.exit,
+    //   y: 120,
+    //   duration: 500,
+    //   ease: "Power2",
+    // });
+
     this.tweens.add({
-      targets: this.exit,
+      targets: this.help,
+      // y: 190,
       y: 120,
       duration: 500,
       ease: "Power2",
     });
 
     this.tweens.add({
-      targets: this.help,
-      y: 190,
-      duration: 500,
-      ease: "Power2",
-    });
-
-    this.tweens.add({
       targets: this.fullscreen,
-      y: 260,
+      // y: 260,
+      y: 190,
       duration: 500,
       ease: "Power2",
     });

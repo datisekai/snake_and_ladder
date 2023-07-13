@@ -9,12 +9,15 @@ export default class GameEnd extends Phaser.Scene {
     super("game-end");
   }
 
-  preload() {
-   
-  }
+  preload() {}
 
   create(data) {
-    const { text } = data;
+    const { text, server, players, playerId } = data;
+    this.server = server;
+    this.players = players;
+    this.playerId = playerId;
+
+    this.countdown = 5;
 
     this.background = this.add.rectangle(
       width / 2,
@@ -27,15 +30,33 @@ export default class GameEnd extends Phaser.Scene {
 
     this.msgBox = this.add.image(width / 2, height / 2, "msg_box");
 
-    this.butHome = this.add
-      .image(this.msgBox.x - 70, this.msgBox.y + 80, "but_home")
-      .setScale(0.7);
-    this.butRestart = this.add
-      .image(this.msgBox.x + 70, this.msgBox.y + 80, "but_restart")
-      .setScale(0.7);
+    this.add
+      .text(
+        this.msgBox.x,
+        this.msgBox.y + this.msgBox.height / 2 - 200,
+        "countdown replay time",
+        {
+          fontFamily: "Permanent Marker",
+          fontSize: "30px",
+          color: "#ffffff",
+        }
+      )
+      .setVisible(true)
+      .setOrigin(0.5);
 
-    this.butHome.setInteractive({ useHandCursor: true });
-    this.butRestart.setInteractive({ useHandCursor: true });
+    this.textCountDown = this.add
+      .text(
+        this.msgBox.x,
+        this.msgBox.y + this.msgBox.height / 2 - 150,
+        this.countdown,
+        {
+          fontFamily: "Permanent Marker",
+          fontSize: "60px",
+          color: "#ffffff",
+        }
+      )
+      .setVisible(true)
+      .setOrigin(0.5);
 
     this.tweens.add({
       targets: this.butRestart,
@@ -45,7 +66,6 @@ export default class GameEnd extends Phaser.Scene {
       yoyo: true,
       repeat: -1,
     });
-
 
     this.messageText = this.add.text(
       this.msgBox.x - 140,
@@ -57,6 +77,27 @@ export default class GameEnd extends Phaser.Scene {
         color: "#ffffff",
       }
     );
+
+    this.handleCountDown()
+  }
+
+  handleCountDown() {
+    this.textCountDown.setVisible(true);
+    setTimeout(() => {
+      this.countdown -= 1;
+      this.textCountDown.setText(this.countdown);
+
+      if (this.countdown == 0) {
+        this.scene.stop();
+        this.scene.start("game", {
+          server: this.server,
+          players: this.players,
+          playerId: this.playerId,
+        });
+      } else {
+        this.handleCountDown();
+      }
+    }, 1000);
   }
 
   update() {}

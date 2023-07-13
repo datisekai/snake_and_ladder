@@ -19,9 +19,8 @@ export default class Keyboard extends Phaser.Scene {
     this.keyboards = [];
     this.roomId = "";
 
-    const {server,numOfPlayers} = data
-    this.server = server
-    this.numOfPlayers = numOfPlayers
+    const { server } = data;
+    this.server = server;
 
     this.add.image(width / 2, height / 2, "bg_game0");
     this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.6);
@@ -40,7 +39,7 @@ export default class Keyboard extends Phaser.Scene {
       switch (gameobject) {
         case this.exit:
           this.scene.stop();
-          this.scene.start('room')
+          this.scene.start("room");
           break;
         default:
           if (gameobject.value == "×") {
@@ -64,9 +63,9 @@ export default class Keyboard extends Phaser.Scene {
   }
 
   async handleSubmit() {
-      await this.server.joinById(this.roomId)
+    await this.server.joinById(this.roomId);
 
-      this.scene.start('wait',{ numOfPlayers:this.numOfPlayers, server:this.server, type:'join' })
+    this.scene.start("wait", { server: this.server, type:'join' });
   }
 
   setRoomId(value) {

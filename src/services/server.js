@@ -2,93 +2,113 @@ import { Client } from "colyseus.js";
 
 export default class Server {
   constructor() {
-    this.client = new Client("wss://fresher.woay.io");
+    const host = "wss://fresher.woay.io";
+    // this.client = new Client("ws://localhost:2567");
+    this.client = new Client(host);
     this.events = new Phaser.Events.EventEmitter();
+    this.countNewGame = 0;
+    this.isOnDiceChange = false;
+    this.isOnNewGame = false;
+    this.isOnStateChanged = false;
+    this.isOnGameOver = false;
   }
 
-  leaveRoom() {
-    this.room.leave();
+  setGameBoard(state) {
+    this.gameBoard = {
+      board: state.board.toArray().map((item) => ({
+        direction: item.direction,
+        id: item.id,
+        incX: item.incX,
+        incY: item.incY,
+        objectId: item.objectId,
+        targetCell: item.targetCell,
+        type: item.type,
+        x: item.x,
+        y: item.y,
+      })),
+      roomId: state.code,
+      player1: { cell: state.player1.cell, id: state.player1.id },
+      player2: { cell: state.player2.cell, id: state.player2.id },
+    };
   }
 
   handleEvent() {
-    this.room.onStateChange.once((state) => {
-      this.events.emit("once-state-changed", state);
+    this.room.onStateChange((state) => {
+      this.events.emit("state-changed", state);
+      if (state.code) {
+        this.events.emit("get-room-code", state.code);
+      }
+      if (state.board) {
+        console.log("called setstate board");
+        this.setGameBoard(state);
+      }
     });
-    // this.room.state.players.onAdd((player, sessionId) => {
-    //   this.events.emit("add-player", { player, sessionId });
-    // });
 
-    // this.room.state.players.onRemove((player, sessionId) => {
-    //   this.events.emit("remove-player", { player, sessionId });
-    // });
+    this.room.onMessage("gameOver", ({ winner }) => {
+      this.events.emit("game-over", { winner });
+    });
 
-    this.room.onMessage('move',(data) => {
-      this.events.emit('roll-changed',data)
-    })
+    this.room.onMessage("newGame", () => {
+      this.events.emit("new-game");
+    });
 
+    this.room.onMessage("move", (data) => {
+      this.events.emit("dice-changed", data);
+    });
   }
 
-  getRoomPlayer() {
-    const players = [];
-    this.room.state.players.forEach((key, value) => {
-      console.log(value);
+  async create() {
+    const room = await this.client.create("snake_and_ladder", {
+      extraDice: true,
+      upperBounce: true,
     });
-  }
-
-  async join() {
-    console.log("join");
-    const room = await this.client.create("snake_and_ladder");
-    window.room = room;
-    room.send('roll');
-    room.onStateChange.once((state) => {
-      window.state = state;
-
-      console.log(state.code);
-    });
-    
-    // room.state.player1.onChange(state => {
-    //   console.log(state)
-    // })
-
-    room.onMessage('move',(state) => {
-      console.log(state)
-    })
 
     this.room = room;
 
     this.handleEvent();
   }
 
-  handleRoll(){
-    this.room.send('roll');
+  handleRoll() {
+    console.log("roll");
+    this.room.send("roll");
   }
 
-  onRollChanged(callback, context){
-    this.events.on('roll-changed',callback, context)
+  onDiceChanged(callback, context) {
+    !this.isOnDiceChange && this.events.on("dice-changed", callback, context);
+    this.isOnDiceChange = true;
   }
 
+  onGetRoomCode(callback, context) {
+    this.events.on("get-room-code", callback, context);
+  }
 
   async joinById(roomId) {
+    console.log("joinByid", roomId);
     const room = await this.client.joinOrCreate("lobby");
-    console.log("room", room);
     room.send("findRoom", roomId);
-    room.onMessage("roomId", (roomId) => {
-      console.log("joinById", roomId);
-      this.client.joinById(roomId);
+    room.onMessage("roomId", async (state) => {
+      const newRoom = await this.client.joinById(state);
+      this.room = newRoom;
+      this.handleEvent();
+
+      this.roomId = roomId;
+      this.events.emit("get-room-code", roomId);
     });
-    this.room = room;
-    this.handleEvent();
   }
 
-  onAddPlayer(callback, context) {
-    this.events.on("add-player", callback, context);
+  onGameOver(callback, context) {
+    !this.isOnGameOver && this.events.on("game-over", callback, context);
+    this.isOnGameOver = true;
   }
 
-  onRemovePlayer(callback, context) {
-    this.events.on("remove-player", callback, context);
+  onNewGame(callback, context) {
+    !this.isOnNewGame && this.events.on("new-game", callback, context);
+    this.isOnNewGame = true;
   }
 
-  onceStateChanged(callback, context) {
-    this.events.once("once-state-changed", callback, context);
+  onStateChanged(callback, context) {
+    !this.isOnStateChanged &&
+      this.events.on("state-changed", callback, context);
+    this.isOnStateChanged = true;
   }
 }

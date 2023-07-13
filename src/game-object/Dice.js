@@ -25,22 +25,31 @@ export default class Dice extends Phaser.GameObjects.Sprite {
     }
   }
 
-  random() {
+
+  random(value) {
     if (!this.currentDice) {
       this.setFrame(1);
       this.disableInteractive();
-      const randomInt = Phaser.Math.Between(1, 6);
-      this.currentDice = this.scene.add.sprite(1100, 400, `dice_${randomInt}`);
+      this.currentDice = this.scene.add.sprite(1100, 400, `dice_${value}`);
 
-      this.currentDice.play(`random_dice_${randomInt}`);
+      this.currentDice.play(`random_dice_${value}`);
 
       return new Promise((resolve) => {
         this.currentDice.on("animationcomplete", (animation, frame) => {
-          if (animation.key === `random_dice_${randomInt}`) {
-            resolve(randomInt);
+          if (animation.key === `random_dice_${value}`) {
+            resolve(value);
           }
         });
       });
+    }
+  }
+  
+  disable(){
+    this.setFrame(1)
+    this.disableInteractive()
+    if (this.currentDice) {
+      this.currentDice.destroy();
+      this.currentDice = null;
     }
   }
 

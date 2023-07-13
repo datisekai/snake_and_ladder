@@ -6,18 +6,21 @@ const { boardX, boardY, cellSize, height, size, width } = config;
 const gapX = 30;
 
 export default class Player extends Phaser.GameObjects.Sprite {
-  constructor(scene, index, sessionId) {
-    const x = boardX - cellSize - index * gapX;
-    const y = boardY + cellSize * size;
+  constructor(scene, index, id) {
+    const position = scene.map[0];
+    // const x = boardX - cellSize - index * gapX;
+    // const y = boardY + cellSize * size;
+    const x = position.x;
+    const y = position.y - cellSize / 3;
     super(scene, x, y, `player_${index}`);
     scene.add.existing(this);
 
-    this.sessionId = sessionId;
+    this.id = id;
 
     this.setOrigin(0, 1);
 
     this.scene = scene;
-    this.score = this.targetScore = 0;
+    this.score = this.targetScore = 1;
     this.isSuperPreUpdate = false;
 
     this.isTweenRunning = false;
@@ -28,11 +31,15 @@ export default class Player extends Phaser.GameObjects.Sprite {
 
     this.depth = 2;
 
+    this.isAutoRoll = false;
+
     this.createAnims();
 
     this.play(`player_turn_${index}`, true);
+  }
 
-    this.lastTurnScore = 0;
+  setAutoRoll(){
+    this.isAutoRoll = !this.isAutoRoll
   }
 
   createAnims() {
@@ -56,12 +63,17 @@ export default class Player extends Phaser.GameObjects.Sprite {
     });
   }
 
+  setTargetServerScore(score) {
+    this.targetServerScore = score;
+  }
+
   increaseTargetScore(score) {
-    this.lastTurnScore = score;
-    if (this.targetScore + score >= 100) {
-      this.targetScore = 100;
+    if (this.targetScore + score > 100) {
+      this.score -= 1;
+      this.move();
       return;
     }
+
     this.targetScore += score;
 
     this.move();
@@ -79,13 +91,26 @@ export default class Player extends Phaser.GameObjects.Sprite {
     this.targetScore = target.snake.tailIndex;
   }
 
+
+
   switchTurn() {
+    if (this.scene.playerTurn === this.scene.playerId) {
+      this.scene.dice.reset();
+      console.log(this.isAutoRoll)
+      // if (this.isAutoRoll) {
+        setTimeout(() => {
+          this.scene.rollDice();
+        }, 500);
+      // }
+    } else {
+      this.scene.dice.disable();
+    }
+
     this.scene.turnPanel.turn();
     this.scene.arrowTurn.switchTurn();
   }
 
   reset() {
-    this.scene.dice.reset();
     this.play(`player_turn_${this.index}`, true);
   }
 
@@ -112,6 +137,14 @@ export default class Player extends Phaser.GameObjects.Sprite {
     this.snake.play(`snake_${this.snake.id}_swallow`);
   }
 
+  syncServer() {
+    if (this.targetServerScore && this.targetServerScore !== this.score) {
+      this.score = this.targetServerScore - 1;
+      this.targetScore = this.targetServerScore;
+      this.move();
+    }
+  }
+
   move() {
     this.score += 1;
     const target = this.scene.map[this.score - 1];
@@ -126,6 +159,8 @@ export default class Player extends Phaser.GameObjects.Sprite {
         this.flipX = target.dir === -1;
         this.play(`player_move_${this.index}`, true);
 
+        this.scene.arrowTurn.visible = false;
+
         if (this.snake) {
           this.scene.scene.launch("notify", { title: "SORY..." });
           this.snakeSwallow();
@@ -138,8 +173,12 @@ export default class Player extends Phaser.GameObjects.Sprite {
             return this.move();
           }
 
-          this.switchTurn();
-          this.reset();
+          this.syncServer();
+
+          if (this.score !== 100) {
+            this.switchTurn();
+            this.reset();
+          }
 
           return;
         }

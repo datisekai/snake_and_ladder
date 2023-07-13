@@ -47,7 +47,7 @@ export default class Bootstrap extends Phaser.Scene {
           this.scale.toggleFullscreen();
           break;
         case this.butPlay:
-          this.scene.start("select-player");
+          this.scene.start("room");
           break;
         case this.butCredit:
           this.scene.launch("credit");

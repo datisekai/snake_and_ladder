@@ -12,7 +12,6 @@ export default class Wait extends Phaser.Scene {
   }
 
   create(data) {
-    this.playerKey = "";
     this.players = [];
 
     this.countdown = 5;
@@ -26,17 +25,17 @@ export default class Wait extends Phaser.Scene {
 
     this.msgBox = this.add.image(width / 2, height / 2, "bg_help");
 
-    this.exit = new Button(
-      this,
-      this.msgBox.x + this.msgBox.width / 2 - 70,
-      this.msgBox.y - this.msgBox.height / 2 + 70,
-      "exit"
-    ).setScale(0.5);
+    // this.exit = new Button(
+    //   this,
+    //   this.msgBox.x + this.msgBox.width / 2 - 70,
+    //   this.msgBox.y - this.msgBox.height / 2 + 70,
+    //   "exit"
+    // ).setScale(0.5);
 
     this.textRoomId = this.add.text(
       this.msgBox.x - this.msgBox.width / 2 + 50,
       this.msgBox.y - this.msgBox.height / 2 + 50,
-      "RoomID: 123456",
+      "Loading...",
       {
         fontFamily: "Permanent Marker",
         fontSize: "30px",
@@ -44,15 +43,14 @@ export default class Wait extends Phaser.Scene {
       }
     );
 
-    const { numOfPlayers, server, type } = data;
+    const { server, type } = data;
     this.server = server;
-    this.numOfPlayers = numOfPlayers;
     this.type = type;
 
     this.textCountPlayer = this.add.text(
       this.msgBox.x + this.msgBox.width / 2 - 200,
       this.msgBox.y - this.msgBox.height / 2 + 50,
-      `1/${numOfPlayers}`,
+      `1/2`,
       {
         fontFamily: "Permanent Marker",
         fontSize: "30px",
@@ -84,45 +82,46 @@ export default class Wait extends Phaser.Scene {
 
     this.input.on("gameobjectdown", (pointer, gameobject) => {
       switch (gameobject) {
-        case this.exit:
-          this.server.leaveRoom();
-          this.scene.stop("wait");
-          this.scene.start("bootstrap");
-          break;
+        // case this.exit:
+        //   this.scene.stop("wait");
+        //   this.scene.start("bootstrap");
+        //   break;
       }
     });
 
     this.handleServer();
   }
 
-  handleCountDown() {
-    this.textCountDown.setVisible(true);
+  handleCountDown(isHiddenText) {
+    !isHiddenText && this.textCountDown.setVisible(true);
     setTimeout(() => {
       this.countdown -= 1;
-      this.textCountDown.setText(this.countdown);
+      !isHiddenText && this.textCountDown.setText(this.countdown);
 
       if (this.countdown == 0) {
-        this.server.leaveRoom();
-        this.scene.stop();
         this.scene.start("game", {
           server: this.server,
-          players: this.players.map((item) => item.sessionId),
+          playerId: this.playerId,
+          players: this.players.map((item) => item.id),
         });
       } else {
-        this.handleCountDown();
+        this.handleCountDown(isHiddenText);
       }
     }, 1000);
   }
 
-  addPlayer(sessionId) {
-    this.players.push(
-      new TurnPlayer(this, this.players.length, 0, 0, 0, sessionId)
-    );
+  addPlayer(id) {
+    this.players.push(new TurnPlayer(this, this.players.length, 0, 0, 0, id));
     this.renderPlayer();
   }
 
+  setRoomId(roomId) {
+    this.roomId = roomId;
+    this.textRoomId.setText(`RoomID: ${this.roomId}`);
+  }
+
   setTextCountPlayer() {
-    this.textCountPlayer.setText(`${this.players.length}/${this.numOfPlayers}`);
+    this?.textCountPlayer?.setText(`${this?.players?.length || 2}/2`);
   }
 
   renderPlayer() {
@@ -139,35 +138,37 @@ export default class Wait extends Phaser.Scene {
   async handleServer() {
     switch (this.type) {
       case "create":
-        await this.server.join();
-        this.playerKey = "player1";
-        this.scene.start("game", {
-          server: this.server,
-          playerId: this.playerKey === "player1" ? 1 : 2,
-        });
-        // this
-        // this.server.onAddPlayer(({ player, sessionId }) => {
-
-        //   console.log(sessionId)
-        //   if (!this.players.some((player) => player.sessionId === sessionId)) {
-        //     this.addPlayer(sessionId);
-        //     this.setTextCountPlayer();
-        //   }
-
-        //   if (this.players.length === this.numOfPlayers) {
-        //     // this.handleCountDown();
-        //   }
-        // });
+        this.playerId = 1;
+        this.addPlayer(1);
         break;
       case "join":
-        this.playerKey = "player2";
+        this.playerId = 2;
+        this.addPlayer(1);
+        this.addPlayer(2);
+        this.setTextCountPlayer();
+        this.handleCountDown();
         break;
     }
 
-    this.server.onceStateChanged((state) => {
-      console.log(state);
+    // this.handleCountDown();
+
+    this.server.onNewGame(() => {
+      if(this.server.countNewGame > 0){
+        this.handleCountDown(true)
+      }else{
+        if (this.type == "create") {
+          this.addPlayer(2);
+          this.setTextCountPlayer();
+          this.handleCountDown(false);
+        }
+
+        this.server.countNewGame += 1
+      }
     });
 
+    this.server.onGetRoomCode((roomId) => {
+      this.setRoomId(roomId);
+    });
     // this.server.onRemovePlayer(({ player, sessionId }) => {
     //   this.players = this.players.filter((item) => {
     //     if (item.sessionId === sessionId) {

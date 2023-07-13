@@ -12,8 +12,7 @@ export default class Room extends Phaser.Scene {
     this.server = new Server();
   }
 
-  create(data) {
-    const { numOfPlayers } = data;
+  create() {
     this.add.image(width / 2, height / 2, "bg_game0");
 
     this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.6);
@@ -59,20 +58,24 @@ export default class Room extends Phaser.Scene {
       "Join"
     );
 
-    this.input.on("gameobjectdown", (pointer, gameobject) => {
+    this.input.on("gameobjectdown", async (pointer, gameobject) => {
       switch (gameobject) {
         case this.exit:
           this.scene.stop();
           this.scene.start("bootstrap");
           break;
         case this.btnCreateRoom:
+          await this.server.create();
           this.scene.stop();
-          this.scene.start("wait", { numOfPlayers, server:this.server,type:'create' });
+          this.scene.start("wait", {
+            server: this.server,
+            type:"create"
+          });
           break;
         case this.btnJoinRoom:
           this.scene.stop();
-          this.scene.start("keyboard", { server: this.server, numOfPlayers });
-          break;  
+          this.scene.start("keyboard", { server: this.server });
+          break;
       }
     });
   }

@@ -10,19 +10,11 @@ export default class Arrow extends Phaser.GameObjects.Sprite {
   }
 
   switchTurn() {
-    const currentPlayer = this.scene.players[this.scene.playerTurnIndex];
+    const currentPlayer = this.scene.players[this.scene.playerTurn - 1];
     this.x = currentPlayer.x + currentPlayer.width / 2;
     this.y = currentPlayer.y - currentPlayer.height - 20;
 
     this.visible = true;
 
-    // this.scene.tweens.add({
-    //   targets: this,
-    //   y: "this.",
-    //   duration: 500,
-    //   ease: "Sine.easeInOut",
-    //   repeat: -1,
-    //   yoyo:true 
-    // });
   }
 }

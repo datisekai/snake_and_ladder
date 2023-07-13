@@ -20,8 +20,8 @@ export default class TurnPanel extends Phaser.GameObjects.Image {
     this.turnPlayers.forEach((item) => {
       item.back();
     });
-    const index = this.scene.playerTurnIndex;
-    this.turnPlayers[index].activeTurn();
+    const index = this.scene.playerTurn;
+    this.turnPlayers[index - 1]?.activeTurn();
   }
 
   addPlayer(index) {

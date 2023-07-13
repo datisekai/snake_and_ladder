@@ -98,9 +98,9 @@ export default class Player extends Phaser.GameObjects.Sprite {
       this.scene.dice.reset();
       console.log(this.isAutoRoll)
       // if (this.isAutoRoll) {
-        setTimeout(() => {
-          this.scene.rollDice();
-        }, 500);
+        // setTimeout(() => {
+          // this.scene.rollDice();
+        // }, 500);
       // }
     } else {
       this.scene.dice.disable();
